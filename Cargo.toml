@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+members = [
+    "exercises/01_concurrency_sync/01_thread_spawn",
+    "exercises/01_concurrency_sync/02_mutex_counter",
+    "exercises/01_concurrency_sync/03_channel",
+    "exercises/01_concurrency_sync/04_process_pipe",
+    "exercises/02_async_programming/01_basic_future",
+    "exercises/02_async_programming/02_tokio_tasks",
+    "exercises/02_async_programming/03_async_channel",
+    "exercises/02_async_programming/04_select_timeout",
+    "exercises/03_no_std_dev/01_global_allocator",
+    "exercises/03_no_std_dev/02_raw_syscall",
+    "exercises/03_no_std_dev/03_file_descriptor",
+    "exercises/04_os_concurrency/01_atomic_counter",
+    "exercises/04_os_concurrency/02_atomic_ordering",
+    "exercises/04_os_concurrency/03_spinlock",
+    "exercises/04_os_concurrency/04_spinlock_guard",
+    "exercises/05_context_switch/01_stack_coroutine",
+    "exercises/05_context_switch/02_green_threads",
+    "cli",
+]

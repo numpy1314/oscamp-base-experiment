@@ -1,0 +1,406 @@
+## OS Camp 练习配置
+## 每个 [[exercise]] 定义一道练习题
+
+# ============================================================
+#  模块一：并发（同步）
+# ============================================================
+
+[[exercise]]
+name = "线程创建"
+package = "thread_spawn"
+path = "exercises/01_concurrency_sync/01_thread_spawn/src/lib.rs"
+module = "并发(同步)"
+description = "学习 thread::spawn 创建线程，move 闭包传递数据，join 等待完成"
+hint = """
+函数 double_in_thread:
+  let handle = thread::spawn(move || {
+      numbers.into_iter().map(|n| n * 2).collect()
+  });
+  handle.join().unwrap()
+
+函数 parallel_sum:
+  分别 spawn 两个线程，每个用 iter().sum::<i32>() 求和
+  然后 join 两个线程取出返回值组成元组"""
+
+[[exercise]]
+name = "Mutex 共享状态"
+package = "mutex_counter"
+path = "exercises/01_concurrency_sync/02_mutex_counter/src/lib.rs"
+module = "并发(同步)"
+description = "使用 Arc<Mutex<T>> 在多线程间安全地共享和修改数据"
+hint = """
+concurrent_counter:
+  let counter = Arc::new(Mutex::new(0usize));
+  for _ in 0..n_threads {
+      let c = Arc::clone(&counter);
+      // spawn 线程，内部循环 count_per_thread 次
+      // 每次: let mut num = c.lock().unwrap(); *num += 1;
+  }
+  // join 所有线程后: *counter.lock().unwrap()
+
+concurrent_collect:
+  类似思路，用 Arc<Mutex<Vec<usize>>>，每个线程 push 自己的 id"""
+
+[[exercise]]
+name = "Channel 通道"
+package = "channel"
+path = "exercises/01_concurrency_sync/03_channel/src/lib.rs"
+module = "并发(同步)"
+description = "使用 mpsc::channel 在线程间传递消息，多生产者模式"
+hint = """
+simple_send_recv:
+  let (tx, rx) = mpsc::channel();
+  thread::spawn(move || {
+      for item in items { tx.send(item).unwrap(); }
+  });
+  rx.iter().collect()   // 当所有 tx 被 drop 后自动结束
+
+multi_producer:
+  创建 channel 后，为每个生产者 clone tx：
+  for id in 0..n_producers {
+      let tx = tx.clone();
+      spawn(move || tx.send(format!("msg from {id}")).unwrap());
+  }
+  drop(tx);  // 必须 drop 原始 tx！否则 rx.iter() 永远不结束
+  rx.iter().sorted()"""
+
+[[exercise]]
+name = "进程管道"
+package = "process_pipe"
+path = "exercises/01_concurrency_sync/04_process_pipe/src/lib.rs"
+module = "并发(同步)"
+description = "使用 Command 创建子进程，通过 Stdio::piped() 管道通信"
+hint = """
+run_command:
+  let output = Command::new(program)
+      .args(args)
+      .stdout(Stdio::piped())
+      .output().unwrap();
+  String::from_utf8(output.stdout).unwrap()
+
+pipe_through_cat:
+  let mut child = Command::new("cat")
+      .stdin(Stdio::piped())
+      .stdout(Stdio::piped())
+      .spawn().unwrap();
+  child.stdin.take().unwrap().write_all(input.as_bytes()).unwrap();
+  // stdin 在这里被 drop（管道关闭），cat 才会输出并退出
+  let output = child.wait_with_output().unwrap();
+
+get_exit_code:
+  Command::new("sh").args(["-c", command]).status().unwrap().code().unwrap()"""
+
+# ============================================================
+#  模块二：异步编程
+# ============================================================
+
+[[exercise]]
+name = "手动实现 Future"
+package = "basic_future"
+path = "exercises/02_async_programming/01_basic_future/src/lib.rs"
+module = "异步编程"
+description = "手动为自定义类型实现 Future trait，理解 Poll/Waker 机制"
+hint = """
+CountDown:
+  fn poll(self: Pin<&mut Self>, cx: ...) -> Poll<...> {
+      let this = self.get_mut();
+      if this.count == 0 {
+          Poll::Ready("liftoff!")
+      } else {
+          this.count -= 1;
+          cx.waker().wake_by_ref();  // 确保会被再次 poll
+          Poll::Pending
+      }
+  }
+
+YieldOnce:
+  类似逻辑，检查 self.yielded 标志
+  第一次 poll: yielded = true, wake, Pending
+  第二次 poll: Ready(())"""
+
+[[exercise]]
+name = "Tokio 异步任务"
+package = "tokio_tasks"
+path = "exercises/02_async_programming/02_tokio_tasks/src/lib.rs"
+module = "异步编程"
+description = "使用 tokio::spawn 创建并发异步任务，JoinHandle 收集结果"
+hint = """
+concurrent_squares:
+  let mut handles = Vec::new();
+  for i in 0..n {
+      handles.push(tokio::spawn(async move { i * i }));
+  }
+  let mut results = Vec::new();
+  for h in handles {
+      results.push(h.await.unwrap());
+  }
+
+parallel_sleep_tasks:
+  类似，但每个任务中加 sleep(Duration::from_millis(duration_ms)).await
+  最后对结果排序"""
+
+[[exercise]]
+name = "异步通道"
+package = "async_channel_ex"
+path = "exercises/02_async_programming/03_async_channel/src/lib.rs"
+module = "异步编程"
+description = "使用 tokio::sync::mpsc 异步通道实现生产者-消费者模式"
+hint = """
+producer_consumer:
+  let (tx, mut rx) = mpsc::channel(items.len().max(1));
+  tokio::spawn(async move {
+      for item in items { tx.send(item).await.unwrap(); }
+  });
+  let mut result = Vec::new();
+  while let Some(item) = rx.recv().await {
+      result.push(item);
+  }
+
+fan_in:
+  为每个 producer clone tx，注意 drop 原始 tx"""
+
+[[exercise]]
+name = "Select 与超时"
+package = "select_timeout"
+path = "exercises/02_async_programming/04_select_timeout/src/lib.rs"
+module = "异步编程"
+description = "使用 tokio::select! 实现竞态执行和超时控制"
+hint = """
+with_timeout:
+  tokio::select! {
+      val = future => Some(val),
+      _ = sleep(Duration::from_millis(timeout_ms)) => None,
+  }
+  注意: future 需要被 pin 住: tokio::pin!(future);
+
+race:
+  tokio::select! {
+      val = f1 => val,
+      val = f2 => val,
+  }
+  同样需要 pin: tokio::pin!(f1); tokio::pin!(f2);"""
+
+# ============================================================
+#  模块三：no_std 开发
+# ============================================================
+
+[[exercise]]
+name = "全局内存分配器"
+package = "global_allocator"
+path = "exercises/03_no_std_dev/01_global_allocator/src/lib.rs"
+module = "no_std 开发"
+description = "实现 GlobalAlloc trait 的 Bump 分配器，理解内存对齐"
+hint = """
+alloc 实现步骤:
+  1. let heap_start = self.heap.get() as usize;
+  2. let current = self.next.load(Ordering::Relaxed);
+  3. let aligned = (heap_start + current + layout.align() - 1) & !(layout.align() - 1);
+  4. let new_next = aligned - heap_start + layout.size();
+  5. if new_next > HEAP_SIZE { return std::ptr::null_mut(); }
+  6. self.next.store(new_next, Ordering::Relaxed);
+  7. aligned as *mut u8
+
+关键：对齐公式 (addr + align - 1) & !(align - 1) 向上取整到 align 的倍数"""
+
+[[exercise]]
+name = "原始系统调用"
+package = "raw_syscall"
+path = "exercises/03_no_std_dev/02_raw_syscall/src/lib.rs"
+module = "no_std 开发"
+description = "使用 asm! 内联汇编直接发起 Linux 系统调用"
+hint = """
+sys_write:
+  let ret: isize;
+  unsafe {
+      asm!(
+          "syscall",
+          in("rax") 1u64,         // write 系统调用号
+          in("rdi") fd as u64,
+          in("rsi") buf.as_ptr() as u64,
+          in("rdx") buf.len() as u64,
+          lateout("rax") ret,
+          out("rcx") _, out("r11") _,  // syscall 破坏的寄存器
+      );
+  }
+
+sys_getpid:
+  类似，rax = 39，无参数"""
+
+[[exercise]]
+name = "文件描述符"
+package = "file_descriptor"
+path = "exercises/03_no_std_dev/03_file_descriptor/src/lib.rs"
+module = "no_std 开发"
+description = "用原始系统调用操作文件描述符，实现 RAII 自动关闭"
+hint = """
+Drop for FileDesc:
+  unsafe { syscall1(SYS_CLOSE, self.fd as u64); }
+
+open_for_write:
+  let mut path_buf: Vec<u8> = path.as_bytes().to_vec();
+  path_buf.push(0);  // C 字符串需要 null 结尾
+  let fd = unsafe {
+      syscall3(SYS_OPEN, path_buf.as_ptr() as u64,
+               O_WRONLY | O_CREAT | O_TRUNC, 0o644)
+  };
+
+fd_write / fd_read:
+  syscall3(SYS_WRITE/SYS_READ, fd.raw() as u64,
+           buf.as_ptr() as u64, buf.len() as u64)"""
+
+# ============================================================
+#  模块四：OS 并发进阶
+# ============================================================
+
+[[exercise]]
+name = "原子计数器"
+package = "atomic_counter"
+path = "exercises/04_os_concurrency/01_atomic_counter/src/lib.rs"
+module = "OS 并发进阶"
+description = "使用 AtomicU64 实现无锁计数器，学习 CAS 操作"
+hint = """
+increment: self.value.fetch_add(1, Ordering::Relaxed)
+decrement: self.value.fetch_sub(1, Ordering::Relaxed)
+get:       self.value.load(Ordering::Relaxed)
+
+compare_and_swap:
+  self.value.compare_exchange(expected, new_val,
+      Ordering::AcqRel, Ordering::Acquire)
+
+fetch_multiply (CAS 循环):
+  loop {
+      let current = self.get();
+      match self.compare_and_swap(current, current * multiplier) {
+          Ok(v) => return v,
+          Err(_) => continue,  // 被其他线程修改了，重试
+      }
+  }"""
+
+[[exercise]]
+name = "内存序"
+package = "atomic_ordering"
+path = "exercises/04_os_concurrency/02_atomic_ordering/src/lib.rs"
+module = "OS 并发进阶"
+description = "使用正确的内存序保证线程间数据可见性"
+hint = """
+FlagChannel::produce:
+  self.data.store(value, Ordering::Relaxed);   // 先写数据
+  self.ready.store(true, Ordering::Release);   // Release 确保 data 写入对其他线程可见
+
+FlagChannel::consume:
+  while !self.ready.load(Ordering::Acquire) {  // Acquire 与 Release 配对
+      std::hint::spin_loop();
+  }
+  self.data.load(Ordering::Relaxed)  // Acquire 保证能看到 produce 的 data 写入
+
+OnceCell::init:
+  match self.initialized.compare_exchange(false, true, SeqCst, SeqCst) {
+      Ok(_) => { self.value.store(val, SeqCst); true }
+      Err(_) => false
+  }"""
+
+[[exercise]]
+name = "自旋锁"
+package = "spinlock"
+path = "exercises/04_os_concurrency/03_spinlock/src/lib.rs"
+module = "OS 并发进阶"
+description = "实现基本自旋锁，理解 compare_exchange 和忙等待"
+hint = """
+lock:
+  loop {
+      match self.locked.compare_exchange(
+          false, true, Ordering::Acquire, Ordering::Relaxed
+      ) {
+          Ok(_) => return unsafe { &mut *self.data.get() },
+          Err(_) => core::hint::spin_loop(),
+      }
+  }
+
+unlock:
+  self.locked.store(false, Ordering::Release);
+
+try_lock:
+  类似 lock，但只尝试一次 compare_exchange
+  成功返回 Some(...)，失败返回 None"""
+
+[[exercise]]
+name = "RAII 自旋锁守卫"
+package = "spinlock_guard"
+path = "exercises/04_os_concurrency/04_spinlock_guard/src/lib.rs"
+module = "OS 并发进阶"
+description = "用 Deref/DerefMut/Drop 实现 RAII 守卫，锁离开作用域自动释放"
+hint = """
+SpinLock::lock:
+  自旋获取锁（同上一题），然后:
+  SpinGuard { lock: self }
+
+Deref for SpinGuard:
+  unsafe { &*self.lock.data.get() }
+
+DerefMut for SpinGuard:
+  unsafe { &mut *self.lock.data.get() }
+
+Drop for SpinGuard:
+  self.lock.locked.store(false, Ordering::Release);
+
+RAII 的好处：即使 panic 也能自动释放锁（unwind 时 Drop 被调用）"""
+
+# ============================================================
+#  模块五：上下文切换
+# ============================================================
+
+[[exercise]]
+name = "有栈协程"
+package = "stack_coroutine"
+path = "exercises/05_context_switch/01_stack_coroutine/src/lib.rs"
+module = "上下文切换"
+description = "用内联汇编实现上下文保存/恢复，理解 callee-saved 寄存器"
+hint = """
+TaskContext::init:
+  unsafe {
+      let stack_ptr = stack_top as *mut usize;
+      *stack_ptr.sub(1) = entry;  // 在栈顶放置入口地址（模拟返回地址）
+  }
+  self.rsp = (stack_top - 8) as u64;  // rsp 指向返回地址
+
+switch_context:
+  asm!(
+      "mov [rdi+0x00], rsp",  "mov [rdi+0x08], rbx",  // ... 保存到 old
+      "mov rsp, [rsi+0x00]",  "mov rbx, [rsi+0x08]",  // ... 从 new 恢复
+      "ret",                  // 弹出栈顶地址并跳转
+      in("rdi") old as *mut _ as u64,
+      in("rsi") new as *const _ as u64,
+      clobber_abi("C"),
+  );
+
+alloc_stack:
+  let buf = vec![0u8; STACK_SIZE];
+  let top = buf.as_ptr() as usize + STACK_SIZE;
+  (buf, top)"""
+
+[[exercise]]
+name = "绿色线程"
+package = "green_threads"
+path = "exercises/05_context_switch/02_green_threads/src/lib.rs"
+module = "上下文切换"
+description = "基于上下文切换实现协作式绿色线程调度器"
+hint = """
+spawn: 分配栈，在栈顶放两个地址:
+  *(top-8)  = thread_finished as usize  // 保护函数（entry 返回后调用）
+  *(top-16) = entry as usize            // 入口地址
+  ctx.rsp = top - 16
+
+schedule_next: 轮询找下一个 Ready 线程
+  for i in 1..=self.threads.len() {
+      let next = (self.current + i) % self.threads.len();
+      if self.threads[next].state == Ready { ... switch ... }
+  }
+
+run:
+  unsafe { SCHEDULER = self as *mut _; }
+  loop {
+      let alive = self.threads.iter().skip(1)
+          .any(|t| t.state != Finished);
+      if !alive { break; }
+      self.schedule_next();
+  }"""

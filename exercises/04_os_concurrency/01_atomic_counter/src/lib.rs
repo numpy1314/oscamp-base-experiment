@@ -1,0 +1,127 @@
+//! # 原子操作基础
+//!
+//! 本练习中，你需要使用原子类型实现无锁的线程安全计数器。
+//!
+//! ## 知识点
+//! - `std::sync::atomic::AtomicU64`
+//! - `fetch_add`, `fetch_sub`, `load`, `store` 操作
+//! - `compare_exchange` 无锁原语
+//! - `Ordering` 内存序
+
+use std::sync::atomic::{AtomicU64, Ordering};
+
+pub struct AtomicCounter {
+    value: AtomicU64,
+}
+
+impl AtomicCounter {
+    pub const fn new(init: u64) -> Self {
+        Self {
+            value: AtomicU64::new(init),
+        }
+    }
+
+    /// 原子地增加 1，返回增加**前**的值。
+    ///
+    /// 提示：使用 `fetch_add` 和 `Ordering::Relaxed`
+    pub fn increment(&self) -> u64 {
+        // TODO
+        todo!()
+    }
+
+    /// 原子地减少 1，返回减少**前**的值。
+    pub fn decrement(&self) -> u64 {
+        // TODO
+        todo!()
+    }
+
+    /// 获取当前值。
+    pub fn get(&self) -> u64 {
+        // TODO
+        todo!()
+    }
+
+    /// 原子 CAS（Compare-And-Swap）操作。
+    /// 如果当前值等于 `expected`，则设为 `new_val`，返回 Ok(expected)。
+    /// 否则返回 Err(当前实际值)。
+    ///
+    /// 提示：使用 `compare_exchange`，成功序使用 `Ordering::AcqRel`，失败序使用 `Ordering::Acquire`
+    pub fn compare_and_swap(&self, expected: u64, new_val: u64) -> Result<u64, u64> {
+        // TODO
+        todo!()
+    }
+
+    /// 使用 CAS 循环实现原子地将值乘以 `multiplier`。
+    /// 返回乘法**前**的值。
+    ///
+    /// 提示：在循环中读取当前值，计算新值，CAS 尝试更新，失败则重试。
+    pub fn fetch_multiply(&self, multiplier: u64) -> u64 {
+        // TODO: CAS loop
+        // loop {
+        //     let current = ...
+        //     let new = current * multiplier;
+        //     match self.compare_and_swap(current, new) { ... }
+        // }
+        todo!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+    use std::thread;
+
+    #[test]
+    fn test_basic_ops() {
+        let c = AtomicCounter::new(0);
+        assert_eq!(c.increment(), 0);
+        assert_eq!(c.increment(), 1);
+        assert_eq!(c.get(), 2);
+        assert_eq!(c.decrement(), 2);
+        assert_eq!(c.get(), 1);
+    }
+
+    #[test]
+    fn test_cas_success() {
+        let c = AtomicCounter::new(10);
+        assert_eq!(c.compare_and_swap(10, 20), Ok(10));
+        assert_eq!(c.get(), 20);
+    }
+
+    #[test]
+    fn test_cas_failure() {
+        let c = AtomicCounter::new(10);
+        assert_eq!(c.compare_and_swap(5, 20), Err(10));
+        assert_eq!(c.get(), 10);
+    }
+
+    #[test]
+    fn test_fetch_multiply() {
+        let c = AtomicCounter::new(3);
+        let old = c.fetch_multiply(4);
+        assert_eq!(old, 3);
+        assert_eq!(c.get(), 12);
+    }
+
+    #[test]
+    fn test_concurrent_increment() {
+        let counter = Arc::new(AtomicCounter::new(0));
+        let mut handles = vec![];
+
+        for _ in 0..10 {
+            let c = Arc::clone(&counter);
+            handles.push(thread::spawn(move || {
+                for _ in 0..1000 {
+                    c.increment();
+                }
+            }));
+        }
+
+        for h in handles {
+            h.join().unwrap();
+        }
+
+        assert_eq!(counter.get(), 10000);
+    }
+}
