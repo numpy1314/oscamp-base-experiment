@@ -14,7 +14,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 ## 练习结构
 
-共 **5 大模块、17 个练习**，由浅入深：
+共 **6 大模块、21 个练习**，由浅入深：
 
 ### 模块一：并发（同步）— `01_concurrency_sync/`
 
@@ -57,6 +57,15 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 |---|------|--------|
 | 1 | `01_stack_coroutine` | callee-saved 寄存器, 栈帧, 上下文切换 |
 | 2 | `02_green_threads` | 绿色线程调度器, 协作式调度, yield |
+
+### 模块六：页表 — `06_page_table/`
+
+| # | 练习 | 知识点 |
+|---|------|--------|
+| 1 | `01_pte_flags` | SV39 PTE 位布局, 位运算构造/解析页表项 |
+| 2 | `02_page_table_walk` | 单级页表, VPN/offset 拆分, 地址翻译, 缺页 |
+| 3 | `03_multi_level_pt` | SV39 三级页表, 页表遍历, 大页(2MB)映射 |
+| 4 | `04_tlb_sim` | TLB 查找/插入/FIFO替换, 刷新(全部/按页/按ASID), MMU 模拟 |
 
 ## 快速开始
 

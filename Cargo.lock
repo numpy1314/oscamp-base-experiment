@@ -258,6 +258,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "multi_level_pt"
+version = "0.1.0"
+
+[[package]]
 name = "mutex_counter"
 version = "0.1.0"
 
@@ -289,6 +293,10 @@ dependencies = [
  "serde",
  "toml",
 ]
+
+[[package]]
+name = "page_table_walk"
+version = "0.1.0"
 
 [[package]]
 name = "parking_lot"
@@ -330,6 +338,10 @@ dependencies = [
 
 [[package]]
 name = "process_pipe"
+version = "0.1.0"
+
+[[package]]
+name = "pte_flags"
 version = "0.1.0"
 
 [[package]]
@@ -496,6 +508,10 @@ dependencies = [
 
 [[package]]
 name = "thread_spawn"
+version = "0.1.0"
+
+[[package]]
+name = "tlb_sim"
 version = "0.1.0"
 
 [[package]]

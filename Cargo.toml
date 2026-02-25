@@ -18,5 +18,9 @@ members = [
     "exercises/04_os_concurrency/04_spinlock_guard",
     "exercises/05_context_switch/01_stack_coroutine",
     "exercises/05_context_switch/02_green_threads",
+    "exercises/06_page_table/01_pte_flags",
+    "exercises/06_page_table/02_page_table_walk",
+    "exercises/06_page_table/03_multi_level_pt",
+    "exercises/06_page_table/04_tlb_sim",
     "cli",
 ]
