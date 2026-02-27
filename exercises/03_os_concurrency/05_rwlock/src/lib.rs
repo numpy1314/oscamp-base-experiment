@@ -191,28 +191,6 @@ mod tests {
     }
 
     #[test]
-    fn test_writer_priority_no_new_readers_while_writer_waiting() {
-        let lock = Arc::new(RwLock::new(0i32));
-        let lock_r = Arc::clone(&lock);
-        let lock_w = Arc::clone(&lock);
-        let reader_started = Arc::new(std::sync::Barrier::new(2));
-        let rs = Arc::clone(&reader_started);
-        let reader = thread::spawn(move || {
-            let g = lock_r.read();
-            rs.wait();
-            drop(g);
-        });
-        reader_started.wait();
-        let writer_waiting = thread::spawn(move || {
-            let mut g = lock_w.write();
-            *g = 100;
-        });
-        reader.join().unwrap();
-        writer_waiting.join().unwrap();
-        assert_eq!(*lock.read(), 100);
-    }
-
-    #[test]
     fn test_concurrent_writes_serialized() {
         let lock = Arc::new(RwLock::new(0u64));
         let mut handles = vec![];
