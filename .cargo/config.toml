@@ -1,0 +1,6 @@
+# 第四章（上下文切换）在非 riscv64 主机上通过 QEMU 用户态运行测试
+# 交叉编译到 riscv64 时必须使用 riscv64 的 linker（由 gcc-riscv64-linux-gnu 提供）
+# 请从仓库根目录执行 cargo（如 cd /path/to/repo && cargo test ...），否则 runner 脚本会找不到
+[target.riscv64gc-unknown-linux-gnu]
+linker = "riscv64-linux-gnu-gcc"
+runner = "bash .cargo/run_riscv64.sh"

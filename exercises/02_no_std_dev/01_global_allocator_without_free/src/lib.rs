@@ -1,12 +1,12 @@
-//! # Global Memory Allocator
+//! # Global Memory Allocator (without free)
 //!
 //! In this exercise, you will implement a simple Bump allocator and understand how the `GlobalAlloc` trait works.
+//! The tests call the allocator directly; in a real no_std setup you would register it with `#[global_allocator]` so that `Vec`, `String`, etc. use it.
 //!
 //! ## Concepts
 //! - `std::alloc::GlobalAlloc` trait
 //! - Memory alignment (alignment)
-//! - Atomic operations for lock‑free allocation
-//! - `#[global_allocator]` attribute
+//! - Using `AtomicUsize` for the bump pointer (tests are single-threaded; a single store is enough)
 
 use std::alloc::{GlobalAlloc, Layout};
 use std::cell::UnsafeCell;
@@ -14,6 +14,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 const HEAP_SIZE: usize = 65536;
 
+/// Backing storage for the heap. Page-aligned so the bump region is easy to reason about.
 #[repr(C, align(4096))]
 struct HeapSpace([u8; HEAP_SIZE]);
 
@@ -49,9 +50,9 @@ impl BumpAllocator {
 //
 // unsafe fn alloc(&self, layout: Layout) -> *mut u8:
 //   1. Get heap start address: self.heap.get() as usize
-//   2. Read next offset
+//   2. Read current offset: current = self.next.load(Ordering::Relaxed)
 //   3. Compute aligned start position:
-//      let aligned = (heap_start + next + layout.align() - 1) & !(layout.align() - 1);
+//      let aligned = (heap_start + current + layout.align() - 1) & !(layout.align() - 1);
 //   4. Compute new next = aligned - heap_start + layout.size()
 //   5. If new_next > HEAP_SIZE, return std::ptr::null_mut()
 //   6. Update self.next (store is enough for single‑threaded test scenario)

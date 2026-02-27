@@ -6,7 +6,7 @@
 //! ## Key Concepts
 //! - x86_64 Linux syscall calling convention
 //! - `asm!` inline assembly
-//! - System call numbers (write=1, getpid=39, uname=63)
+//! - System call numbers used here: write=1, getpid=39
 //!
 //! ## x86_64 Linux Syscall Convention
 //! - rax: system call number
@@ -19,38 +19,35 @@ use std::arch::asm;
 /// Use the `write` system call (number 1) to write data to a file descriptor.
 /// Returns the number of bytes written, or a negative value on failure.
 ///
-/// Hint:
+/// Hint: buffer pointer and length come from `buf.as_ptr()` and `buf.len()`.
 /// ```text
 /// asm!(
 ///     "syscall",
 ///     in("rax") 1u64,        // syscall number for write
 ///     in("rdi") fd as u64,   // file descriptor
-///     in("rsi") buf_ptr,     // buffer pointer
-///     in("rdx") buf_len,     // buffer length
-///     lateout("rax") ret,    // return value
+///     in("rsi") buf_ptr,     // buffer pointer (e.g. buf.as_ptr() as u64)
+///     in("rdx") buf_len,     // buffer length (e.g. buf.len() as u64)
+///     lateout("rax") ret,    // return value (isize)
 ///     out("rcx") _,          // clobbered by syscall
 ///     out("r11") _,          // clobbered by syscall
 /// )
 /// ```
 #[cfg(target_os = "linux")]
 pub fn sys_write(fd: i32, buf: &[u8]) -> isize {
-    // TODO: Use asm! to make the write system call
     todo!()
 }
 
 /// Use the `getpid` system call (number 39) to get the current process ID.
+/// Hint: no arguments; declare `let ret: i32` and use lateout("rax") ret; include out("rcx") _, out("r11") _.
 #[cfg(target_os = "linux")]
 pub fn sys_getpid() -> i32 {
-    // TODO: Use asm! to make the getpid system call
-    // getpid has no arguments, returns the process ID
     todo!()
 }
 
 /// Use the `write` syscall to print a string to stdout (automatically adds newline).
+/// Hint: call sys_write(1, msg.as_bytes()) then sys_write(1, b"\n").
 #[cfg(target_os = "linux")]
 pub fn sys_println(msg: &str) {
-    // TODO: Call sys_write to write msg to fd=1 (stdout)
-    // TODO: Then write "\n"
     todo!()
 }
 

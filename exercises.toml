@@ -91,105 +91,15 @@ get_exit_code:
   Command::new("sh").args(["-c", command]).status().unwrap().code().unwrap()"""
 
 # ============================================================
-#  Module 2: Async Programming
+#  Module 2: no_std Development
 # ============================================================
 
 [[exercise]]
-name = "Manual Future Implementation"
-package = "basic_future"
-path = "exercises/02_async_programming/01_basic_future/src/lib.rs"
-module = "Async Programming"
-description = "Manually implement Future trait for custom types, understand Poll/Waker mechanism"
-hint = """
-CountDown:
-  fn poll(self: Pin<&mut Self>, cx: ...) -> Poll<...> {
-      let this = self.get_mut();
-      if this.count == 0 {
-          Poll::Ready("liftoff!")
-      } else {
-          this.count -= 1;
-          cx.waker().wake_by_ref();  // ensure will be polled again
-          Poll::Pending
-      }
-  }
-
-YieldOnce:
-  Similar logic, check self.yielded flag
-  first poll: yielded = true, wake, Pending
-  second poll: Ready(())"""
-
-[[exercise]]
-name = "Tokio Async Tasks"
-package = "tokio_tasks"
-path = "exercises/02_async_programming/02_tokio_tasks/src/lib.rs"
-module = "Async Programming"
-description = "Use tokio::spawn to create concurrent async tasks, JoinHandle to collect results"
-hint = """
-concurrent_squares:
-  let mut handles = Vec::new();
-  for i in 0..n {
-      handles.push(tokio::spawn(async move { i * i }));
-  }
-  let mut results = Vec::new();
-  for h in handles {
-      results.push(h.await.unwrap());
-  }
-
-parallel_sleep_tasks:
-  Similar, but add sleep(Duration::from_millis(duration_ms)).await in each task
-  Finally sort results"""
-
-[[exercise]]
-name = "Async Channel"
-package = "async_channel_ex"
-path = "exercises/02_async_programming/03_async_channel/src/lib.rs"
-module = "Async Programming"
-description = "Use tokio::sync::mpsc async channel to implement producer-consumer pattern"
-hint = """
-producer_consumer:
-  let (tx, mut rx) = mpsc::channel(items.len().max(1));
-  tokio::spawn(async move {
-      for item in items { tx.send(item).await.unwrap(); }
-  });
-  let mut result = Vec::new();
-  while let Some(item) = rx.recv().await {
-      result.push(item);
-  }
-
-fan_in:
-  Clone tx for each producer, remember to drop original tx"""
-
-[[exercise]]
-name = "Select and Timeout"
-package = "select_timeout"
-path = "exercises/02_async_programming/04_select_timeout/src/lib.rs"
-module = "Async Programming"
-description = "Use tokio::select! to implement race execution and timeout control"
-hint = """
-with_timeout:
-  tokio::select! {
-      val = future => Some(val),
-      _ = sleep(Duration::from_millis(timeout_ms)) => None,
-  }
-  Note: future needs to be pinned: tokio::pin!(future);
-
-race:
-  tokio::select! {
-      val = f1 => val,
-      val = f2 => val,
-  }
-  Similarly needs pin: tokio::pin!(f1); tokio::pin!(f2);"""
-
-# ============================================================
-#  Module 3: no_std Development
-# ============================================================
-
-[[exercise]]
-name = "Global Memory Allocator"
-package = "global_allocator"
-path = "exercises/03_no_std_dev/01_global_allocator/src/lib.rs"
+name = "Global Memory Allocator (without free)"
+package = "global_allocator_without_free"
+path = "exercises/02_no_std_dev/01_global_allocator_without_free/src/lib.rs"
 module = "no_std Development"
-description = "Implement Bump allocator with GlobalAlloc trait, understand memory alignment"
+description = "Implement Bump allocator (no dealloc) with GlobalAlloc trait, understand memory alignment"
 hint = """
 alloc implementation steps:
   1. let heap_start = self.heap.get() as usize;
@@ -200,12 +110,29 @@ alloc implementation steps:
   6. self.next.store(new_next, Ordering::Relaxed);
   7. aligned as *mut u8
 
-Key: alignment formula (addr + align - 1) & !(align - 1) rounds up to align multiple"""
+dealloc: Bump allocator does not free individual blocks; leave the function body empty.
+
+Key: alignment formula (addr + align - 1) & !(align - 1) rounds up to align multiple."""
+
+[[exercise]]
+name = "Allocator with Free"
+package = "allocator_with_free"
+path = "exercises/02_no_std_dev/02_allocator_with_free/src/lib.rs"
+module = "no_std Development"
+description = "Implement free-list allocator with both alloc and dealloc; single-round and multi-round (batch / interleaved) reuse"
+hint = """
+You may use any correct algorithm (first-fit, best-fit, coalescing on free, etc.); the reference uses first-fit.
+
+Block layout: [size: 8 bytes][payload]. Return pointer = block + 8. Minimum block = 16 bytes.
+
+alloc: Traverse free list (free_head), find a block with size >= need. Unlink; if remainder >= MIN_BLOCK, split and insert remainder. Write need at block start, return (block + 8). No fit => null_mut().
+
+dealloc: block_start = ptr - 8, block_size = *(block_start). Insert at head: *(block_start) = size, *(block_start+8) = free_head, set_free_head(block_start)."""
 
 [[exercise]]
 name = "Raw System Calls"
 package = "raw_syscall"
-path = "exercises/03_no_std_dev/02_raw_syscall/src/lib.rs"
+path = "exercises/02_no_std_dev/03_raw_syscall/src/lib.rs"
 module = "no_std Development"
 description = "Use asm! inline assembly to directly make Linux system calls"
 hint = """
@@ -223,39 +150,41 @@ sys_write:
       );
   }
 
-sys_getpid:
-  Similar, rax = 39, no parameters"""
+sys_getpid: rax = 39, no arguments; let ret: i32, lateout("rax") ret, same clobbers (rcx, r11).
+
+sys_println: call sys_write(1, msg.as_bytes()) then sys_write(1, b\"\\n\")."""
 
 [[exercise]]
 name = "File Descriptors"
 package = "file_descriptor"
-path = "exercises/03_no_std_dev/03_file_descriptor/src/lib.rs"
+path = "exercises/02_no_std_dev/04_file_descriptor/src/lib.rs"
 module = "no_std Development"
 description = "Use raw system calls to operate file descriptors, implement RAII auto-close"
 hint = """
-Drop for FileDesc:
+Drop for FileDesc (only the #[cfg(target_os = \"linux\")] impl):
   unsafe { syscall1(SYS_CLOSE, self.fd as u64); }
 
 open_for_write:
   let mut path_buf: Vec<u8> = path.as_bytes().to_vec();
   path_buf.push(0);  // C string needs null terminator
-  let fd = unsafe {
-      syscall3(SYS_OPEN, path_buf.as_ptr() as u64,
-               O_WRONLY | O_CREAT | O_TRUNC, 0o644)
-  };
+  let fd = unsafe { syscall3(SYS_OPEN, path_buf.as_ptr() as u64,
+               O_WRONLY | O_CREAT | O_TRUNC, 0o644) };
+  if fd < 0 { Err(fd) } else { Ok(FileDesc::from_raw(fd as i32)) }
+
+open_for_read: same path handling, flags = O_RDONLY, mode = 0; same Err/Ok handling.
 
 fd_write / fd_read:
-  syscall3(SYS_WRITE/SYS_READ, fd.raw() as u64,
-           buf.as_ptr() as u64, buf.len() as u64)"""
+  let ret = unsafe { syscall3(SYS_WRITE or SYS_READ, fd.raw() as u64, buf.as_ptr() as u64, buf.len() as u64) };
+  if ret < 0 { Err(ret) } else { Ok(ret as usize) }"""
 
 # ============================================================
-#  Module 4: OS Concurrency Advanced
+#  Module 3: OS Concurrency Advanced
 # ============================================================
 
 [[exercise]]
 name = "Atomic Counter"
 package = "atomic_counter"
-path = "exercises/04_os_concurrency/01_atomic_counter/src/lib.rs"
+path = "exercises/03_os_concurrency/01_atomic_counter/src/lib.rs"
 module = "OS Concurrency Advanced"
 description = "Use AtomicU64 to implement lock-free counter, learn CAS operations"
 hint = """
@@ -279,7 +208,7 @@ fetch_multiply (CAS loop):
 [[exercise]]
 name = "Memory Ordering"
 package = "atomic_ordering"
-path = "exercises/04_os_concurrency/02_atomic_ordering/src/lib.rs"
+path = "exercises/03_os_concurrency/02_atomic_ordering/src/lib.rs"
 module = "OS Concurrency Advanced"
 description = "Use correct memory ordering to ensure data visibility between threads"
 hint = """
@@ -302,7 +231,7 @@ OnceCell::init:
 [[exercise]]
 name = "Spinlock"
 package = "spinlock"
-path = "exercises/04_os_concurrency/03_spinlock/src/lib.rs"
+path = "exercises/03_os_concurrency/03_spinlock/src/lib.rs"
 module = "OS Concurrency Advanced"
 description = "Implement basic spinlock, understand compare_exchange and busy waiting"
 hint = """
@@ -326,7 +255,7 @@ try_lock:
 [[exercise]]
 name = "RAII Spinlock Guard"
 package = "spinlock_guard"
-path = "exercises/04_os_concurrency/04_spinlock_guard/src/lib.rs"
+path = "exercises/03_os_concurrency/04_spinlock_guard/src/lib.rs"
 module = "OS Concurrency Advanced"
 description = "Use Deref/DerefMut/Drop to implement RAII guard, automatically release lock when leaving scope"
 hint = """
@@ -345,14 +274,29 @@ Drop for SpinGuard:
 
 RAII benefit: even panic automatically releases lock (Drop called during unwind)"""
 
+[[exercise]]
+name = "Read-Write Lock (Writer-Priority)"
+package = "rwlock"
+path = "exercises/03_os_concurrency/05_rwlock/src/lib.rs"
+module = "OS Concurrency Advanced"
+description = "Implement writer-priority RwLock from scratch using atomics; no std::sync::RwLock"
+hint = """
+Rust provides std::sync::RwLock; this exercise implements a minimal writer-priority version for learning.
+
+State in one AtomicU32: reader_count (low bits), WRITER_HOLDING, WRITER_WAITING. Writer-priority: set WRITER_WAITING before waiting so new readers block.
+
+read: spin until !WRITER_HOLDING && !WRITER_WAITING, then CAS increment reader count. Release: fetch_sub(1).
+write: fetch_or(WRITER_WAITING); spin until no readers and no holder; CAS(WRITER_WAITING, WRITER_HOLDING). Release: fetch_and(!(WRITER_HOLDING|WRITER_WAITING)).
+Guards: Deref/DerefMut and Drop to release."""
+
 # ============================================================
-#  Module 5: Context Switching
+#  Module 4: Context Switching
 # ============================================================
 
 [[exercise]]
 name = "Stackful Coroutine"
 package = "stack_coroutine"
-path = "exercises/05_context_switch/01_stack_coroutine/src/lib.rs"
+path = "exercises/04_context_switch/01_stack_coroutine/src/lib.rs"
 module = "Context Switching"
 description = "Use inline assembly to implement context save/restore, understand callee-saved registers"
 hint = """
@@ -381,7 +325,7 @@ alloc_stack:
 [[exercise]]
 name = "Green Threads"
 package = "green_threads"
-path = "exercises/05_context_switch/02_green_threads/src/lib.rs"
+path = "exercises/04_context_switch/02_green_threads/src/lib.rs"
 module = "Context Switching"
 description = "Implement cooperative green thread scheduler based on context switching"
 hint = """
@@ -404,6 +348,96 @@ run:
       if !alive { break; }
       self.schedule_next();
   }"""
+
+# ============================================================
+#  Module 5: Async Programming
+# ============================================================
+
+[[exercise]]
+name = "Manual Future Implementation"
+package = "basic_future"
+path = "exercises/05_async_programming/01_basic_future/src/lib.rs"
+module = "Async Programming"
+description = "Manually implement Future trait for custom types, understand Poll/Waker mechanism"
+hint = """
+CountDown:
+  fn poll(self: Pin<&mut Self>, cx: ...) -> Poll<...> {
+      let this = self.get_mut();
+      if this.count == 0 {
+          Poll::Ready("liftoff!")
+      } else {
+          this.count -= 1;
+          cx.waker().wake_by_ref();  // ensure will be polled again
+          Poll::Pending
+      }
+  }
+
+YieldOnce:
+  Similar logic, check self.yielded flag
+  first poll: yielded = true, wake, Pending
+  second poll: Ready(())"""
+
+[[exercise]]
+name = "Tokio Async Tasks"
+package = "tokio_tasks"
+path = "exercises/05_async_programming/02_tokio_tasks/src/lib.rs"
+module = "Async Programming"
+description = "Use tokio::spawn to create concurrent async tasks, JoinHandle to collect results"
+hint = """
+concurrent_squares:
+  let mut handles = Vec::new();
+  for i in 0..n {
+      handles.push(tokio::spawn(async move { i * i }));
+  }
+  let mut results = Vec::new();
+  for h in handles {
+      results.push(h.await.unwrap());
+  }
+
+parallel_sleep_tasks:
+  Similar, but add sleep(Duration::from_millis(duration_ms)).await in each task
+  Finally sort results"""
+
+[[exercise]]
+name = "Async Channel"
+package = "async_channel_ex"
+path = "exercises/05_async_programming/03_async_channel/src/lib.rs"
+module = "Async Programming"
+description = "Use tokio::sync::mpsc async channel to implement producer-consumer pattern"
+hint = """
+producer_consumer:
+  let (tx, mut rx) = mpsc::channel(items.len().max(1));
+  tokio::spawn(async move {
+      for item in items { tx.send(item).await.unwrap(); }
+  });
+  let mut result = Vec::new();
+  while let Some(item) = rx.recv().await {
+      result.push(item);
+  }
+
+fan_in:
+  Clone tx for each producer, remember to drop original tx"""
+
+[[exercise]]
+name = "Select and Timeout"
+package = "select_timeout"
+path = "exercises/05_async_programming/04_select_timeout/src/lib.rs"
+module = "Async Programming"
+description = "Use tokio::select! to implement race execution and timeout control"
+hint = """
+with_timeout:
+  tokio::select! {
+      val = future => Some(val),
+      _ = sleep(Duration::from_millis(timeout_ms)) => None,
+  }
+  Note: future needs to be pinned: tokio::pin!(future);
+
+race:
+  tokio::select! {
+      val = f1 => val,
+      val = f2 => val,
+  }
+  Similarly needs pin: tokio::pin!(f1); tokio::pin!(f2);"""
 
 # ============================================================
 #  Module 6: Page Tables

@@ -75,8 +75,8 @@ impl FileDesc {
     }
 }
 
-// TODO: Implement Drop trait for FileDesc
-// Calls the close system call to close the file descriptor
+// TODO: Implement Drop trait for FileDesc (only this Linux impl; the other impl is an empty placeholder for non-Linux).
+// Call the close system call: unsafe { syscall1(SYS_CLOSE, self.fd as u64); }
 #[cfg(target_os = "linux")]
 impl Drop for FileDesc {
     fn drop(&mut self) {
@@ -96,33 +96,27 @@ impl Drop for FileDesc {
 /// mode = 0o644
 #[cfg(target_os = "linux")]
 pub fn open_for_write(path: &str) -> Result<FileDesc, i64> {
-    // TODO: Construct a C-style path (append \0)
-    // TODO: Call syscall3(SYS_OPEN, path_ptr, flags, mode)
-    // TODO: If return value < 0, return Err
-    // TODO: Otherwise return Ok(FileDesc::from_raw(fd))
     todo!()
 }
 
 /// Opens a file for reading using the open system call.
+/// Hint: same as open_for_write but flags = O_RDONLY, mode = 0; path still needs null terminator.
 #[cfg(target_os = "linux")]
 pub fn open_for_read(path: &str) -> Result<FileDesc, i64> {
-    // TODO: Similar to open_for_write, but flags = O_RDONLY, mode = 0
     todo!()
 }
 
 /// Writes data using the write system call.
+/// Hint: syscall3 returns i64; if ret < 0 then Err(ret), else Ok(ret as usize).
 #[cfg(target_os = "linux")]
 pub fn fd_write(fd: &FileDesc, buf: &[u8]) -> Result<usize, i64> {
-    // TODO: Call syscall3(SYS_WRITE, fd, buf_ptr, buf_len)
-    // TODO: Return number of bytes written or error code
     todo!()
 }
 
 /// Reads data using the read system call.
+/// Hint: same return convention as fd_write: ret < 0 => Err(ret), else Ok(ret as usize).
 #[cfg(target_os = "linux")]
 pub fn fd_read(fd: &FileDesc, buf: &mut [u8]) -> Result<usize, i64> {
-    // TODO: Call syscall3(SYS_READ, fd, buf_ptr, buf_len)
-    // TODO: Return number of bytes read or error code
     todo!()
 }
 

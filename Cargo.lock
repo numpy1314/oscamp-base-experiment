@@ -3,6 +3,10 @@
 version = 4
 
 [[package]]
+name = "allocator_with_free"
+version = "0.1.0"
+
+[[package]]
 name = "async_channel_ex"
 version = "0.1.0"
 dependencies = [
@@ -133,7 +137,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "global_allocator"
+name = "global_allocator_without_free"
 version = "0.1.0"
 
 [[package]]
@@ -374,6 +378,10 @@ checksum = "6d94dd2f7cd932d4dc02cc8b2b50dfd38bd079a4e5d79198b99743d7fcf9a4b4"
 dependencies = [
  "bitflags 2.11.0",
 ]
+
+[[package]]
+name = "rwlock"
+version = "0.1.0"
 
 [[package]]
 name = "same-file"

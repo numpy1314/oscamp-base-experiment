@@ -71,9 +71,27 @@ fn load_exercises() -> Vec<Exercise> {
     std::process::exit(1);
 }
 
+/// 第四章（上下文切换）需用 riscv64 target，在 x86 上通过 .cargo/config 的 runner 用 QEMU 运行。
+const RISCV64_TARGET: &str = "riscv64gc-unknown-linux-gnu";
+const RISCV64_PACKAGES: &[&str] = &["stack_coroutine", "green_threads"];
+
+fn need_riscv64_target(package: &str) -> bool {
+    RISCV64_PACKAGES.contains(&package)
+}
+
 fn test_exercise(ex: &Exercise) -> TestResult {
+    let mut args = vec!["test", "-p", &ex.package];
+    if need_riscv64_target(&ex.package) {
+        args.extend(["--target", RISCV64_TARGET]);
+    }
+    if need_riscv64_target(&ex.package) {
+        args.extend(["--", "--color=always", "--nocapture"]);
+    } else {
+        args.extend(["--", "--color=always"]);
+    }
+
     let output = Command::new("cargo")
-        .args(["test", "-p", &ex.package, "--", "--color=always"])
+        .args(&args)
         .output()
         .expect("Failed to run cargo test");
 
@@ -88,8 +106,17 @@ fn test_exercise(ex: &Exercise) -> TestResult {
 }
 
 fn test_quiet(ex: &Exercise) -> bool {
+    let mut args = vec!["test", "-p", &ex.package];
+    if need_riscv64_target(&ex.package) {
+        args.extend(["--target", RISCV64_TARGET]);
+    }
+    args.push("--quiet");
+    if need_riscv64_target(&ex.package) {
+        args.extend(["--", "--nocapture"]);
+    }
+
     Command::new("cargo")
-        .args(["test", "-p", &ex.package, "--quiet"])
+        .args(&args)
         .stderr(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .status()
