@@ -285,7 +285,10 @@ mod tests {
     fn test_aarch64_riscv64_share_numbers() {
         let aarch64 = aarch64_abi();
         let riscv64 = riscv64_abi();
-        assert_eq!(aarch64.sys_write, riscv64.sys_write, "aarch64 and riscv64 share asm-generic syscall numbers");
+        assert_eq!(
+            aarch64.sys_write, riscv64.sys_write,
+            "aarch64 and riscv64 share asm-generic syscall numbers"
+        );
         assert_eq!(aarch64.sys_read, riscv64.sys_read);
         assert_eq!(aarch64.sys_close, riscv64.sys_close);
         assert_eq!(aarch64.sys_exit, riscv64.sys_exit);
@@ -301,7 +304,11 @@ mod tests {
         fn test_sys_write_stdout() {
             let msg = b"[syscall_wrapper] sys_write test\n";
             let ret = sys_write(1, msg);
-            assert_eq!(ret, msg.len() as isize, "sys_write should return bytes written");
+            assert_eq!(
+                ret,
+                msg.len() as isize,
+                "sys_write should return bytes written"
+            );
         }
 
         #[test]

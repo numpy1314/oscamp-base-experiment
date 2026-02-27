@@ -175,7 +175,8 @@ impl Mmu {
 
     /// 在页表中添加一条映射。
     pub fn add_mapping(&mut self, asid: u16, vpn: u64, ppn: u64, flags: u64) {
-        self.page_table.push((asid, PageMapping { vpn, ppn, flags }));
+        self.page_table
+            .push((asid, PageMapping { vpn, ppn, flags }));
     }
 
     /// 切换当前地址空间（ASID）。
@@ -412,7 +413,10 @@ mod tests {
         assert_eq!(mmu.tlb.stats.hits, 9);
         assert_eq!(mmu.tlb.stats.misses, 1);
         let rate = mmu.tlb.stats.hit_rate();
-        assert!((rate - 0.9).abs() < 1e-9, "hit rate should be 0.9, got {rate}");
+        assert!(
+            (rate - 0.9).abs() < 1e-9,
+            "hit rate should be 0.9, got {rate}"
+        );
     }
 
     #[test]

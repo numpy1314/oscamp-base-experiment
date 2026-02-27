@@ -16,6 +16,23 @@
 //! │ 10bit │  44 bits   │ 2b │ │ │ │ │ │ │ │ │
 //! └───────┴────────────┴────┴─┴─┴─┴─┴─┴─┴─┴─┘
 //! ```
+//! - V (Valid): Valid bit indicating whether the page table entry is valid.
+//!
+//! - R/W/X (Read/Write/Execute): Permission bits for read, write, and execute access respectively.
+//!
+//! - U (User): User-accessible bit, allowing access from user mode.
+//!
+//! - G (Global): Global mapping bit (typically used for kernel space to avoid TLB flushes).
+//!
+//! - A (Accessed): Accessed bit, set by hardware when the page is accessed.
+//!
+//! - D (Dirty): Dirty bit, set by hardware when the page is written to.
+//!
+//! - RSW (Reserved for Supervisor Software): Two bits reserved for operating system software use.
+//!
+//! - PPN (Physical Page Number): Physical page number occupying 44 bits (bits [53:10]), specifying the base address of the physical page frame.
+//! - PPN[2:0] (Physical Page Number): In the RISC-V SV39 paging mechanism, the Physical Page Number (PPN) is divided into three parts, which are referred to as PPN[2], PPN[1], and PPN[0]. This division is designed to support the indexing of multi-level page tables.
+//! - Rsvd (Reserved): Reserved bits, typically set to 0.
 
 /// PTE flag constants
 pub const PTE_V: u64 = 1 << 0; // Valid

@@ -108,7 +108,10 @@ mod tests {
 
     impl MockFile {
         fn new(id: usize) -> Arc<Self> {
-            Arc::new(Self { id, write_log: Mutex::new(vec![]) })
+            Arc::new(Self {
+                id,
+                write_log: Mutex::new(vec![]),
+            })
         }
     }
 
@@ -159,7 +162,10 @@ mod tests {
         let fd2 = table.alloc(MockFile::new(2)); // fd=2
 
         assert!(table.close(fd1), "closing fd=1 should succeed");
-        assert!(table.get(fd1).is_none(), "get should return None after close");
+        assert!(
+            table.get(fd1).is_none(),
+            "get should return None after close"
+        );
 
         // Next allocation should reuse fd=1 (smallest free)
         let fd_new = table.alloc(MockFile::new(99));
@@ -171,7 +177,10 @@ mod tests {
     #[test]
     fn test_close_invalid() {
         let mut table = FdTable::new();
-        assert!(!table.close(0), "closing non-existent fd should return false");
+        assert!(
+            !table.close(0),
+            "closing non-existent fd should return false"
+        );
     }
 
     #[test]

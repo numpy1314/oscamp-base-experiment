@@ -127,7 +127,10 @@ mod tests {
         let layout = Layout::from_size_align(64, 8).unwrap();
         let p1 = unsafe { alloc.alloc(layout) } as usize;
         let p2 = unsafe { alloc.alloc(layout) } as usize;
-        assert!(p1 + 64 <= p2 || p2 + 64 <= p1, "two allocations must not overlap");
+        assert!(
+            p1 + 64 <= p2 || p2 + 64 <= p1,
+            "two allocations must not overlap"
+        );
     }
 
     #[test]
@@ -159,6 +162,9 @@ mod tests {
         alloc.reset();
         let p2 = unsafe { alloc.alloc(layout) };
         assert!(!p2.is_null(), "should be able to allocate after reset");
-        assert_eq!(p1, p2, "address after reset should match the first allocation");
+        assert_eq!(
+            p1, p2,
+            "address after reset should match the first allocation"
+        );
     }
 }

@@ -62,6 +62,10 @@ mod tests {
 
         assert_eq!(result, vec![0, 1, 2, 3, 4]);
         // Concurrent execution, total time should be much less than 5 * 100ms
-        assert!(elapsed.as_millis() < 400, "Tasks should run concurrently, took {}ms", elapsed.as_millis());
+        assert!(
+            elapsed.as_millis() < 400,
+            "Tasks should run concurrently, took {}ms",
+            elapsed.as_millis()
+        );
     }
 }

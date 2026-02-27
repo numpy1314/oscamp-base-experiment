@@ -32,11 +32,11 @@
 //! Run `cargo test` to check your implementations.
 
 #[allow(unused_imports)]
+use std::cell::RefCell;
+#[allow(unused_imports)]
 use std::thread;
 #[allow(unused_imports)]
 use std::time::Duration;
-#[allow(unused_imports)]
-use std::cell::RefCell;
 
 // ============================================================================
 // Example Code: Advanced Thread Patterns
