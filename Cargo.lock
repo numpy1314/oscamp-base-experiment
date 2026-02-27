@@ -3,6 +3,10 @@
 version = 4
 
 [[package]]
+name = "allocator_with_free"
+version = "0.1.0"
+
+[[package]]
 name = "async_channel_ex"
 version = "0.1.0"
 dependencies = [
@@ -133,7 +137,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "global_allocator"
+name = "global_allocator_without_free"
 version = "0.1.0"
 
 [[package]]

@@ -14,7 +14,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 ## Exercise Structure
 
-**6 modules, 21 exercises** in total, from easy to advanced:
+**6 modules, 22 exercises** in total, from easy to advanced:
 
 ### Module 1: Concurrency (Synchronous) — `01_concurrency_sync/`
 
@@ -29,9 +29,10 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 | # | Exercise | Concepts |
 |---|----------|----------|
-| 1 | `01_global_allocator` | `GlobalAlloc` trait, Bump allocator, memory alignment |
-| 2 | `02_raw_syscall` | `asm!` inline assembly, Linux syscall calling convention |
-| 3 | `03_file_descriptor` | File descriptors, RAII, open/read/write/close |
+| 1 | `01_global_allocator_without_free` | `GlobalAlloc` trait, Bump allocator (no dealloc), memory alignment |
+| 2 | `02_allocator_with_free` | Free-list allocator, alloc + dealloc, block reuse |
+| 3 | `03_raw_syscall` | `asm!` inline assembly, Linux syscall calling convention |
+| 4 | `04_file_descriptor` | File descriptors, RAII, open/read/write/close |
 
 ### Module 3: OS Concurrency Advanced — `03_os_concurrency/`
 

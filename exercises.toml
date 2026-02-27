@@ -95,11 +95,11 @@ get_exit_code:
 # ============================================================
 
 [[exercise]]
-name = "Global Memory Allocator"
-package = "global_allocator"
-path = "exercises/02_no_std_dev/01_global_allocator/src/lib.rs"
+name = "Global Memory Allocator (without free)"
+package = "global_allocator_without_free"
+path = "exercises/02_no_std_dev/01_global_allocator_without_free/src/lib.rs"
 module = "no_std Development"
-description = "Implement Bump allocator with GlobalAlloc trait, understand memory alignment"
+description = "Implement Bump allocator (no dealloc) with GlobalAlloc trait, understand memory alignment"
 hint = """
 alloc implementation steps:
   1. let heap_start = self.heap.get() as usize;
@@ -110,12 +110,29 @@ alloc implementation steps:
   6. self.next.store(new_next, Ordering::Relaxed);
   7. aligned as *mut u8
 
-Key: alignment formula (addr + align - 1) & !(align - 1) rounds up to align multiple"""
+dealloc: Bump allocator does not free individual blocks; leave the function body empty.
+
+Key: alignment formula (addr + align - 1) & !(align - 1) rounds up to align multiple."""
+
+[[exercise]]
+name = "Allocator with Free"
+package = "allocator_with_free"
+path = "exercises/02_no_std_dev/02_allocator_with_free/src/lib.rs"
+module = "no_std Development"
+description = "Implement free-list allocator with both alloc and dealloc; single-round and multi-round (batch / interleaved) reuse"
+hint = """
+You may use any correct algorithm (first-fit, best-fit, coalescing on free, etc.); the reference uses first-fit.
+
+Block layout: [size: 8 bytes][payload]. Return pointer = block + 8. Minimum block = 16 bytes.
+
+alloc: Traverse free list (free_head), find a block with size >= need. Unlink; if remainder >= MIN_BLOCK, split and insert remainder. Write need at block start, return (block + 8). No fit => null_mut().
+
+dealloc: block_start = ptr - 8, block_size = *(block_start). Insert at head: *(block_start) = size, *(block_start+8) = free_head, set_free_head(block_start)."""
 
 [[exercise]]
 name = "Raw System Calls"
 package = "raw_syscall"
-path = "exercises/02_no_std_dev/02_raw_syscall/src/lib.rs"
+path = "exercises/02_no_std_dev/03_raw_syscall/src/lib.rs"
 module = "no_std Development"
 description = "Use asm! inline assembly to directly make Linux system calls"
 hint = """
@@ -133,30 +150,32 @@ sys_write:
       );
   }
 
-sys_getpid:
-  Similar, rax = 39, no parameters"""
+sys_getpid: rax = 39, no arguments; let ret: i32, lateout("rax") ret, same clobbers (rcx, r11).
+
+sys_println: call sys_write(1, msg.as_bytes()) then sys_write(1, b\"\\n\")."""
 
 [[exercise]]
 name = "File Descriptors"
 package = "file_descriptor"
-path = "exercises/02_no_std_dev/03_file_descriptor/src/lib.rs"
+path = "exercises/02_no_std_dev/04_file_descriptor/src/lib.rs"
 module = "no_std Development"
 description = "Use raw system calls to operate file descriptors, implement RAII auto-close"
 hint = """
-Drop for FileDesc:
+Drop for FileDesc (only the #[cfg(target_os = \"linux\")] impl):
   unsafe { syscall1(SYS_CLOSE, self.fd as u64); }
 
 open_for_write:
   let mut path_buf: Vec<u8> = path.as_bytes().to_vec();
   path_buf.push(0);  // C string needs null terminator
-  let fd = unsafe {
-      syscall3(SYS_OPEN, path_buf.as_ptr() as u64,
-               O_WRONLY | O_CREAT | O_TRUNC, 0o644)
-  };
+  let fd = unsafe { syscall3(SYS_OPEN, path_buf.as_ptr() as u64,
+               O_WRONLY | O_CREAT | O_TRUNC, 0o644) };
+  if fd < 0 { Err(fd) } else { Ok(FileDesc::from_raw(fd as i32)) }
+
+open_for_read: same path handling, flags = O_RDONLY, mode = 0; same Err/Ok handling.
 
 fd_write / fd_read:
-  syscall3(SYS_WRITE/SYS_READ, fd.raw() as u64,
-           buf.as_ptr() as u64, buf.len() as u64)"""
+  let ret = unsafe { syscall3(SYS_WRITE or SYS_READ, fd.raw() as u64, buf.as_ptr() as u64, buf.len() as u64) };
+  if ret < 0 { Err(ret) } else { Ok(ret as usize) }"""
 
 # ============================================================
 #  Module 3: OS Concurrency Advanced
