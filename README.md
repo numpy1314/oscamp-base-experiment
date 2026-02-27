@@ -38,9 +38,11 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 | # | Exercise | Concepts |
 |---|----------|----------|
-| 1 | `01_global_allocator` | `GlobalAlloc` trait, Bump allocator, memory alignment |
-| 2 | `02_raw_syscall` | `asm!` inline assembly, Linux syscall calling convention |
-| 3 | `03_file_descriptor` | File descriptors, RAII, open/read/write/close |
+| 1 | `01_mem_primitives` | `no_std` memory primitives: memcpy/memset/memmove/strlen/strcmp |
+| 2 | `02_bump_allocator` | `GlobalAlloc` trait, Bump allocator, CAS atomic operations |
+| 3 | `03_free_list_allocator` | Free-list allocator, intrusive linked list, dealloc |
+| 4 | `04_syscall_wrapper` | `asm!` inline assembly, Linux x86_64 syscall ABI |
+| 5 | `05_fd_table` | File descriptor table, `Arc<dyn File>`, fd reuse |
 
 ### Module 4: OS Concurrency Advanced — `04_os_concurrency/`
 
