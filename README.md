@@ -132,6 +132,16 @@ cargo test --workspace
 4. **Save**: After saving file, CLI automatically re-runs tests
 5. **Pass**: After passing tests, automatically jump to next exercise; press `h` to view hints anytime
 
+## Submitting Scores
+
+This repository uses a CI pipeline to automatically score your exercises and submit results to the leaderboard.
+
+1. Fork this repository on [CNB](https://cnb.cool)
+2. Complete exercises locally or in the cloud-native WebIDE
+3. Push your changes to your fork
+4. Create a **Pull Request** to the upstream repository — this triggers the scoring pipeline
+5. The pipeline runs all tests, calculates your score (out of 100), and uploads it to the OpenCamp leaderboard
+
 ## Notes
 
 - Some exercises (e.g., Module 2 syscall wrapper, Module 4 assembly) require a **Linux** environment; Module 4 only supports **riscv64**
