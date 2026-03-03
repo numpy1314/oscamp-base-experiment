@@ -143,7 +143,6 @@ jobs:
           cat $SUMMARY
 
       - name: Post score to OpenCamp
-        if: ${{ secrets.OSCAMP_TOKEN != '' }}
         run: |
           curl -X POST "https://api.opencamp.cn/web/api/courseRank/createByThirdToken" \
             -H "accept: application/json;charset=utf-8" \
