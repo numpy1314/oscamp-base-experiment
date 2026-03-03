@@ -16,7 +16,7 @@
 
 #![cfg(target_arch = "riscv64")]
 
-use std::arch::asm;
+use core::arch::naked_asm;
 
 /// Per-thread stack size. Slightly larger to avoid overflow under QEMU / test harness.
 const STACK_SIZE: usize = 1024 * 128;
@@ -71,8 +71,11 @@ extern "C" fn thread_wrapper() {
 
 /// Save current callee-saved regs into `old`, load from `new`, then `ret` to `new.ra`.
 /// Zero `a0`/`a1` before `ret` so we don't leak pointers into the new context.
-unsafe fn switch_context(old: &mut TaskContext, new: &TaskContext) {
-    asm!(
+///
+/// Must be `#[unsafe(naked)]` to prevent the compiler from generating a prologue/epilogue.
+#[unsafe(naked)]
+unsafe extern "C" fn switch_context(_old: &mut TaskContext, _new: &TaskContext) {
+    naked_asm!(
         "sd sp, 0(a0)",
         "sd ra, 8(a0)",
         "sd s0, 16(a0)",
@@ -104,9 +107,6 @@ unsafe fn switch_context(old: &mut TaskContext, new: &TaskContext) {
         "li a0, 0",
         "li a1, 0",
         "ret",
-        in("a0") old as *mut TaskContext as u64,
-        in("a1") new as *const TaskContext as u64,
-        options(noreturn, preserves_flags),
     );
 }
 
@@ -190,6 +190,10 @@ fn thread_finished() {
 mod tests {
     use super::*;
     use std::sync::atomic::{AtomicU32, Ordering};
+    use std::sync::Mutex;
+
+    /// Tests must run serially: the scheduler uses global state (SCHEDULER, CURRENT_THREAD_ENTRY).
+    static TEST_LOCK: Mutex<()> = Mutex::new(());
 
     static EXEC_ORDER: AtomicU32 = AtomicU32::new(0);
 
@@ -209,6 +213,7 @@ mod tests {
 
     #[test]
     fn test_scheduler_runs_all() {
+        let _guard = TEST_LOCK.lock().unwrap();
         EXEC_ORDER.store(0, Ordering::SeqCst);
 
         let mut sched = Scheduler::new();
@@ -233,6 +238,7 @@ mod tests {
 
     #[test]
     fn test_single_thread() {
+        let _guard = TEST_LOCK.lock().unwrap();
         SIMPLE_FLAG.store(0, Ordering::SeqCst);
 
         let mut sched = Scheduler::new();
